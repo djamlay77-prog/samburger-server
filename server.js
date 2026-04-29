@@ -1,21 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
-const YooKassa = require('yookassa'); // Используем установленный пакет
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Пока ключей нет, оставляем тестовые заглушки
-const checkout = new YooKassa({
-    shopId: '123456', 
-    secretKey: 'test_xxxxxxxxxxxxxxxxxxxxxxxx'
-});
-
+const PORT = process.env.PORT || 3000;
 const DB_FILE = './orders.json';
 
-// Чтение базы
 const getOrders = () => {
     if (!fs.existsSync(DB_FILE)) return [];
     try {
@@ -23,38 +16,47 @@ const getOrders = () => {
     } catch (e) { return []; }
 };
 
-// Сохранение в базу
 const saveOrder = (order) => {
     const orders = getOrders();
     orders.push(order);
     fs.writeFileSync(DB_FILE, JSON.stringify(orders, null, 2));
 };
 
-// Маршрут для создания заказа
+// Главная страница
+app.get('/', (req, res) => {
+    res.send('<h1>Samburger API v2.0 Live</h1>');
+});
+
+// Создание заказа с выдачей ID
 app.post('/create-payment', (req, res) => {
-    const { amount, customerName, phone } = req.body;
-    const orderId = "SB-" + Date.now();
+    const { amount, customerName, phone, items } = req.body;
+    
+    // Генерируем короткий ID для удобства (например, последние 4 цифры времени)
+    const shortId = Math.floor(1000 + Math.random() * 9000);
+    const orderId = `SB-${shortId}`;
 
     const newOrder = {
         order_id: orderId,
         name: customerName,
-        phone: phone || 'Не указан',
+        phone: phone,
         amount: amount,
-        status: 'Ожидает оплаты',
-        date: new Date()
+        items: items || [],
+        status: 'Новый',
+        date: new Date().toLocaleString("ru-RU")
     };
 
     saveOrder(newOrder);
-    console.log(`✅ Заказ сохранен: ${orderId}`);
+    console.log(`✅ Новый заказ: ${orderId}`);
+    
+    // Возвращаем ID фронтенду
     res.json({ success: true, order_id: orderId });
 });
 
-// Маршрут для админки
+// Список для персонала
 app.get('/admin/orders', (req, res) => {
     res.json(getOrders());
 });
 
-app.listen(3000, () => {
-    console.log('🚀 СЕРВЕР ЗАПУЩЕН!');
-    console.log('🔗 Админка будет брать данные отсюда: http://localhost:3000/admin/orders');
+app.listen(PORT, () => {
+    console.log(`🚀 Сервер на порту ${PORT}`);
 });

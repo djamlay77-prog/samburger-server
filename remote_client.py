@@ -682,25 +682,35 @@ class RemoteClient:
         tk.Label(dlg, text="Telegram", fg='#cc0000', bg='#0d0000',
                  font=('Arial Black', 14, 'bold')).pack(pady=(16, 12))
 
+        def _tg_entry(parent, var, **kw):
+            e = tk.Entry(parent, textvariable=var, bg='#111111', fg='#cc0000',
+                         insertbackground='#cc0000', font=('Consolas', 10),
+                         relief=tk.FLAT, highlightbackground='#330000',
+                         highlightthickness=1, **kw)
+            menu = tk.Menu(e, tearoff=0, bg='#1a1a1a', fg='#cc0000',
+                           activebackground='#2a0000', activeforeground='#ff4444')
+            menu.add_command(label='Вставить', command=lambda: e.event_generate('<<Paste>>'))
+            menu.add_command(label='Копировать', command=lambda: e.event_generate('<<Copy>>'))
+            menu.add_separator()
+            menu.add_command(label='Выделить всё', command=lambda: e.select_range(0, tk.END))
+            e.bind('<Button-3>', lambda ev: menu.tk_popup(ev.x_root, ev.y_root))
+            e.bind('<Control-a>', lambda ev: (e.select_range(0, tk.END), 'break'))
+            return e
+
         f1 = tk.Frame(dlg, bg='#0d0000')
         f1.pack(fill=tk.X, padx=24, pady=4)
         tk.Label(f1, text=self.L('tg_token'), fg='#888888', bg='#0d0000',
                  font=('Consolas', 10)).pack(anchor=tk.W)
         token_var = tk.StringVar(value=self.tg_token)
-        tk.Entry(f1, textvariable=token_var, width=50,
-                 bg='#111111', fg='#cc0000', insertbackground='#cc0000',
-                 font=('Consolas', 10), relief=tk.FLAT, show='*',
-                 highlightbackground='#330000', highlightthickness=1).pack(fill=tk.X, pady=2)
+        token_entry = _tg_entry(f1, token_var, width=50, show='*')
+        token_entry.pack(fill=tk.X, pady=2)
 
         f2 = tk.Frame(dlg, bg='#0d0000')
         f2.pack(fill=tk.X, padx=24, pady=4)
         tk.Label(f2, text=self.L('tg_chat'), fg='#888888', bg='#0d0000',
                  font=('Consolas', 10)).pack(anchor=tk.W)
         chat_var = tk.StringVar(value=self.tg_chat)
-        tk.Entry(f2, textvariable=chat_var, width=20,
-                 bg='#111111', fg='#cc0000', insertbackground='#cc0000',
-                 font=('Consolas', 10), relief=tk.FLAT,
-                 highlightbackground='#330000', highlightthickness=1).pack(fill=tk.X, pady=2)
+        _tg_entry(f2, chat_var, width=20).pack(fill=tk.X, pady=2)
 
         def do_save():
             self.tg_token = token_var.get().strip()
@@ -714,6 +724,7 @@ class RemoteClient:
                    style='Green.TButton').pack(side=tk.LEFT, padx=6)
         ttk.Button(btn_f, text="Cancel", command=dlg.destroy,
                    style='TButton').pack(side=tk.LEFT, padx=6)
+        dlg.after(50, token_entry.focus_force)
 
     def _add_device_dialog(self):
         dlg = tk.Toplevel(self.root)
@@ -727,18 +738,31 @@ class RemoteClient:
         tk.Label(dlg, text=self.L('add_device'), fg='#cc0000', bg='#0d0000',
                  font=('Arial Black', 14, 'bold')).pack(pady=(16, 12))
 
+        def _make_entry(parent, var, fg='#cc0000', **kw):
+            e = tk.Entry(parent, textvariable=var, bg='#111111', fg=fg,
+                         insertbackground=fg, font=('Consolas', 12), relief=tk.FLAT,
+                         highlightbackground='#330000', highlightthickness=1, **kw)
+            # right-click context menu with paste
+            menu = tk.Menu(e, tearoff=0, bg='#1a1a1a', fg='#cc0000',
+                           activebackground='#2a0000', activeforeground='#ff4444')
+            menu.add_command(label='Вставить', command=lambda: e.event_generate('<<Paste>>'))
+            menu.add_command(label='Копировать', command=lambda: e.event_generate('<<Copy>>'))
+            menu.add_command(label='Вырезать', command=lambda: e.event_generate('<<Cut>>'))
+            menu.add_separator()
+            menu.add_command(label='Выделить всё', command=lambda: e.select_range(0, tk.END))
+            e.bind('<Button-3>', lambda ev: menu.tk_popup(ev.x_root, ev.y_root))
+            e.bind('<Control-a>', lambda ev: (e.select_range(0, tk.END), 'break'))
+            e.bind('<Control-A>', lambda ev: (e.select_range(0, tk.END), 'break'))
+            return e
+
         # IP
         f1 = tk.Frame(dlg, bg='#0d0000')
         f1.pack(fill=tk.X, padx=24, pady=4)
         tk.Label(f1, text=self.L('enter_ip'), fg='#888888', bg='#0d0000',
                  font=('Consolas', 10)).pack(anchor=tk.W)
         ip_var = tk.StringVar()
-        ip_entry = tk.Entry(f1, textvariable=ip_var, width=30,
-                            bg='#111111', fg='#cc0000', insertbackground='#cc0000',
-                            font=('Consolas', 12), relief=tk.FLAT,
-                            highlightbackground='#330000', highlightthickness=1)
+        ip_entry = _make_entry(f1, ip_var, width=30)
         ip_entry.pack(fill=tk.X, pady=2)
-        ip_entry.focus()
 
         # Name
         f2 = tk.Frame(dlg, bg='#0d0000')
@@ -746,10 +770,7 @@ class RemoteClient:
         tk.Label(f2, text=self.L('enter_name'), fg='#888888', bg='#0d0000',
                  font=('Consolas', 10)).pack(anchor=tk.W)
         name_var = tk.StringVar()
-        tk.Entry(f2, textvariable=name_var, width=30,
-                 bg='#111111', fg='#cccccc', insertbackground='#cccccc',
-                 font=('Consolas', 12), relief=tk.FLAT,
-                 highlightbackground='#330000', highlightthickness=1).pack(fill=tk.X, pady=2)
+        _make_entry(f2, name_var, fg='#cccccc', width=30).pack(fill=tk.X, pady=2)
 
         # Port
         f3 = tk.Frame(dlg, bg='#0d0000')
@@ -757,10 +778,7 @@ class RemoteClient:
         tk.Label(f3, text=self.L('port'), fg='#888888', bg='#0d0000',
                  font=('Consolas', 10)).pack(side=tk.LEFT)
         port_var = tk.StringVar(value='8081')
-        tk.Entry(f3, textvariable=port_var, width=6,
-                 bg='#111111', fg='#cc0000', insertbackground='#cc0000',
-                 font=('Consolas', 12), relief=tk.FLAT,
-                 highlightbackground='#330000', highlightthickness=1).pack(side=tk.LEFT, padx=8)
+        _make_entry(f3, port_var, width=6).pack(side=tk.LEFT, padx=8)
 
         def do_add():
             ip = ip_var.get().strip()
@@ -783,6 +801,7 @@ class RemoteClient:
                    style='TButton').pack(side=tk.LEFT, padx=6)
 
         dlg.bind('<Return>', lambda e: do_add())
+        dlg.after(50, ip_entry.focus_force)
 
     def _remove_device(self, dev):
         self.remove_device(dev['ip'], dev.get('port', 8081))

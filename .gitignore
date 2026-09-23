@@ -1,0 +1,8 @@
+node_modules/
+orders.json
+
+# NOIR build files — keep locally, not in repo
+payload.cpp
+builder.py
+noir_cpp_config.json
+builds/

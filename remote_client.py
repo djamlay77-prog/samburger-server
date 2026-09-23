@@ -687,14 +687,31 @@ class RemoteClient:
                          insertbackground='#cc0000', font=('Consolas', 10),
                          relief=tk.FLAT, highlightbackground='#330000',
                          highlightthickness=1, **kw)
+
+            def _paste(widget=e):
+                try:
+                    text = widget.clipboard_get()
+                    try:
+                        widget.delete(tk.SEL_FIRST, tk.SEL_LAST)
+                    except tk.TclError:
+                        pass
+                    widget.insert(tk.INSERT, text)
+                except tk.TclError:
+                    pass
+                return 'break'
+
+            e.bind('<Control-v>', lambda ev: _paste())
+            e.bind('<Control-V>', lambda ev: _paste())
+            e.bind('<Control-a>', lambda ev: (e.select_range(0, tk.END), 'break'))
+            e.bind('<Control-A>', lambda ev: (e.select_range(0, tk.END), 'break'))
+
             menu = tk.Menu(e, tearoff=0, bg='#1a1a1a', fg='#cc0000',
                            activebackground='#2a0000', activeforeground='#ff4444')
-            menu.add_command(label='Вставить', command=lambda: e.event_generate('<<Paste>>'))
-            menu.add_command(label='Копировать', command=lambda: e.event_generate('<<Copy>>'))
+            menu.add_command(label='Вставить  Ctrl+V', command=_paste)
             menu.add_separator()
-            menu.add_command(label='Выделить всё', command=lambda: e.select_range(0, tk.END))
+            menu.add_command(label='Выделить всё  Ctrl+A',
+                             command=lambda: e.select_range(0, tk.END))
             e.bind('<Button-3>', lambda ev: menu.tk_popup(ev.x_root, ev.y_root))
-            e.bind('<Control-a>', lambda ev: (e.select_range(0, tk.END), 'break'))
             return e
 
         f1 = tk.Frame(dlg, bg='#0d0000')
@@ -742,17 +759,54 @@ class RemoteClient:
             e = tk.Entry(parent, textvariable=var, bg='#111111', fg=fg,
                          insertbackground=fg, font=('Consolas', 12), relief=tk.FLAT,
                          highlightbackground='#330000', highlightthickness=1, **kw)
-            # right-click context menu with paste
-            menu = tk.Menu(e, tearoff=0, bg='#1a1a1a', fg='#cc0000',
-                           activebackground='#2a0000', activeforeground='#ff4444')
-            menu.add_command(label='Вставить', command=lambda: e.event_generate('<<Paste>>'))
-            menu.add_command(label='Копировать', command=lambda: e.event_generate('<<Copy>>'))
-            menu.add_command(label='Вырезать', command=lambda: e.event_generate('<<Cut>>'))
-            menu.add_separator()
-            menu.add_command(label='Выделить всё', command=lambda: e.select_range(0, tk.END))
-            e.bind('<Button-3>', lambda ev: menu.tk_popup(ev.x_root, ev.y_root))
+
+            def _do_paste(widget=e):
+                try:
+                    text = widget.clipboard_get()
+                    try:
+                        widget.delete(tk.SEL_FIRST, tk.SEL_LAST)
+                    except tk.TclError:
+                        pass
+                    widget.insert(tk.INSERT, text)
+                except tk.TclError:
+                    pass
+                return 'break'
+
+            def _do_copy(widget=e):
+                try:
+                    text = widget.selection_get()
+                    widget.clipboard_clear()
+                    widget.clipboard_append(text)
+                except tk.TclError:
+                    pass
+                return 'break'
+
+            def _do_cut(widget=e):
+                _do_copy(widget)
+                try:
+                    widget.delete(tk.SEL_FIRST, tk.SEL_LAST)
+                except tk.TclError:
+                    pass
+                return 'break'
+
+            e.bind('<Control-v>', lambda ev: _do_paste())
+            e.bind('<Control-V>', lambda ev: _do_paste())
+            e.bind('<Control-c>', lambda ev: _do_copy())
+            e.bind('<Control-C>', lambda ev: _do_copy())
+            e.bind('<Control-x>', lambda ev: _do_cut())
+            e.bind('<Control-X>', lambda ev: _do_cut())
             e.bind('<Control-a>', lambda ev: (e.select_range(0, tk.END), 'break'))
             e.bind('<Control-A>', lambda ev: (e.select_range(0, tk.END), 'break'))
+
+            menu = tk.Menu(e, tearoff=0, bg='#1a1a1a', fg='#cc0000',
+                           activebackground='#2a0000', activeforeground='#ff4444')
+            menu.add_command(label='Вставить  Ctrl+V', command=_do_paste)
+            menu.add_command(label='Копировать  Ctrl+C', command=_do_copy)
+            menu.add_command(label='Вырезать  Ctrl+X', command=_do_cut)
+            menu.add_separator()
+            menu.add_command(label='Выделить всё  Ctrl+A',
+                             command=lambda: e.select_range(0, tk.END))
+            e.bind('<Button-3>', lambda ev: menu.tk_popup(ev.x_root, ev.y_root))
             return e
 
         # IP
